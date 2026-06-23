@@ -9,12 +9,12 @@ const dynamo = DynamoDBDocumentClient.from(client);
 export const handler = async (event) => {
   try {
   
-    const businessId = event.pathParameters?.id;
+    const BusinessId = event.pathParameters?.id;
 // BUSINESS ID IS REQUIRED
-    if (!businessId) {
+    if (!BusinessId) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ error: "Missing businessId in path" }),
+        body: JSON.stringify({ error: "Missing BusinessId in path" }),
       };
     }
 
@@ -22,15 +22,15 @@ export const handler = async (event) => {
     const [businessResult, reviewsResult] = await Promise.all([
       dynamo.send(
         new GetCommand({
-          TableName: "business",
-          Key: { businessId },
+          TableName: "Business",
+          Key: { BusinessId },
         })
       ),
       dynamo.send(
         new QueryCommand({
-          TableName: "reviews",
-          KeyConditionExpression: "businessId = :id",
-          ExpressionAttributeValues: { ":id": businessId },
+          TableName: "Reviews",
+          KeyConditionExpression: "BusinessId = :id",
+          ExpressionAttributeValues: { ":id": BusinessId },
         })
       ),
     ]);
@@ -39,11 +39,11 @@ export const handler = async (event) => {
     if (!businessResult.Item) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: "Business not found" }),
+        body: JSON.stringify({ error: "No Business found" }),
       };
     }
 
-    // return the business along with its reviews in one response
+    // RETURNED BOTH THE REVEWS AND BUSINESS
     return {
       statusCode: 200,
       body: JSON.stringify({

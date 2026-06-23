@@ -12,21 +12,20 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     if (!userId) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized - no valid session" }),
+        body: JSON.stringify({ error: "Invalid User id" }),
       };
     }
 
     const body = JSON.parse(event.body);
 
     const item = {
-      businessId: Date.now().toString(),
+      BusinessId: Date.now().toString(),
       name: body.name,
-      category: body.category,
       description: body.description,
       userId,
     };
 
-    await dynamo.send(new PutCommand({ TableName: "business", Item: item }));
+    await dynamo.send(new PutCommand({ TableName: "Business", Item: item }));
 
     return {
       statusCode: 200,

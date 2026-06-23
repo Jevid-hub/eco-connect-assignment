@@ -13,17 +13,17 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     if (!userId) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized - please login" }),
+        body: JSON.stringify({ error: "Invalid User" }),
       };
     }
 
-    const businessId = event.pathParameters?.id;
+    const BusinessId = event.pathParameters?.id;
 
     // GETTING EXISTING BUSINESS
     const existing = await dynamo.send(
       new GetCommand({
-        TableName: "business",
-        Key: { businessId },
+        TableName: "Business",
+        Key: { BusinessId },
       })
     );
 
@@ -31,7 +31,7 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     if (!existing.Item) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: "Business not found" }),
+        body: JSON.stringify({ error: "No Business Found" }),
       };
     }
 
@@ -39,14 +39,14 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     if (existing.Item.userId !== userId) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized - you did not create this business" }),
+        body: JSON.stringify({ error: "Permission Denied" }),
       };
     }
 
     // SAFE DELETE
     await dynamo.send(
       new DeleteCommand({
-        TableName: "business",
+        TableName: "Business",
         Key: { businessId },
       })
     );

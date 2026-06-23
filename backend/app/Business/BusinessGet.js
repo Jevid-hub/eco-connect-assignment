@@ -10,7 +10,7 @@ export const handler = async (event) => {
     // FETCHING ALL BUSINESS
     const result = await dynamo.send(
       new ScanCommand({
-        TableName: "business",
+        TableName: "Business",
       })
     );
 

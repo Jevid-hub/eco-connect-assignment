@@ -3,29 +3,34 @@ import { DynamoDBDocumentClient, UpdateCommand, GetCommand } from "@aws-sdk/lib-
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-
+const headers = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+}
 export const handler = async (event) => {
-  
-  const userId = event.requestContext?.authorizer?.claims?.sub;
 
-  // USER ID IS REQUIRED
-  if (!userId) {
+  const admin = event.requestContext?.authorizer?.claims?.sub;
+
+  // ADMIN IS REQUIRED
+  if (!admin) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: "Inalid User" }),
+      headers,
+      body: JSON.stringify({ error: "Inalid Admin" }),
     };
   }
 
   try {
-    const ReviewId = event.pathParameters?.reviewid;
+    const ReviewId = event.pathParameters?.ReviewId;
     const body = JSON.parse(event.body);
-    const { BusinessId, comment } = body;
+    const { message } = body;
 
     // FETCH THE REVIEWS 
     const existing = await dynamo.send(
       new GetCommand({
         TableName: "Reviews",
-        Key: {BusinessId, ReviewId },
+        Key: { BusinessId, ReviewId },
       })
     );
 
@@ -33,15 +38,17 @@ export const handler = async (event) => {
     if (!existing.Item) {
       return {
         statusCode: 404,
+        headers,
         body: JSON.stringify({ error: "No Reviews found" }),
       };
     }
 
     // PERMISSION CHECKing 
-    if (existing.Item.userId !== userId) {
+    if (existing.Item.admin !== admin) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Invalid User perimssion" }),
+        headers,
+        body: JSON.stringify({ error: "Invalid Admin perimssion" }),
       };
     }
 
@@ -49,13 +56,13 @@ export const handler = async (event) => {
     const result = await dynamo.send(
       new UpdateCommand({
         TableName: "Reviews",
-        Key: { BusinessId, ReviewId },  
-        UpdateExpression: "set #c = :comment",
+        Key: { BusinessId, ReviewId },
+        UpdateExpression: "set #c = :message",
         ExpressionAttributeNames: {
-          "#c": "comment",  
+          "#c": "message",
         },
         ExpressionAttributeValues: {
-          ":comment": comment,
+          ":message": message,
         },
         ReturnValues: "ALL_NEW",
       })
@@ -63,12 +70,14 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify(result.Attributes),
     };
 
   } catch (error) {
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message }),
     };
   }

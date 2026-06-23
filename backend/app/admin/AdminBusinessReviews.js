@@ -4,15 +4,21 @@ import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
+const headers = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+};
 
 export const handler = async (event) => {
-  const userId = event.requestContext?.authorizer?.claims?.sub;
+  const admin = event.requestContext?.authorizer?.claims?.sub;
 
-  // USER IS REQUIRED
-  if (!userId) {
+  // ADMIN IS REQUIRED
+  if (!admin) {
     return {
       statusCode: 401,
-      body: JSON.stringify({ error: "Invalid User", }),
+      headers,
+      body: JSON.stringify({ error: "Invalid Admin", }),
     };
   }
 
@@ -25,14 +31,15 @@ export const handler = async (event) => {
 
     // FILTERING USER BASED BUSINESS AND REVIEWS
     const userBusinesses = (businessData.Items || []).filter(
-      (item) => item.userId === userId
+      (item) => item.admin === admin
     );
     const userReviews = (reviewsData.Items || []).filter(
-      (item) => item.userId === userId
+      (item) => item.admin === admin
     );
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({
         businesses: userBusinesses,
         reviews: userReviews,
@@ -41,6 +48,7 @@ export const handler = async (event) => {
   } catch (error) {
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message }),
     };
   }

@@ -3,24 +3,29 @@ import { DynamoDBDocumentClient, UpdateCommand, GetCommand } from "@aws-sdk/lib-
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-
+const headers = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+}
 export const handler = async (event) => {
   try {
-    
-const userId = event.requestContext?.authorizer?.claims?.sub;
+
+    const admin = event.requestContext?.authorizer?.claims?.sub;
 
     //USER ID MUST REQUIRED
-    if (!userId) {
+    if (!admin) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Invalid User" }),
+        headers,
+        body: JSON.stringify({ error: "Invalid Admin" }),
       };
     }
 
-    const BusinessId = event.pathParameters?.id;
+    const BusinessId = event.pathParameters?.BusinessId;
 
     // FETCHING PARTICULAR BUSINESS
-    const existing = await dynamo.send(
+    const business = await dynamo.send(
       new GetCommand({
         TableName: "Business",
         Key: { BusinessId },
@@ -28,19 +33,20 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     );
 
     // NO BUSINESS FOUND
-    if (!existing.Item) {
+    if (!business.Item) {
       return {
         statusCode: 404,
-
+        headers,
         body: JSON.stringify({ error: "Business not found" }),
       };
     }
 
     // USER AND PERMISSION CHECK
-    if (existing.Item.userId !== userId) {
+    if (business.Item.admin !== admin) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "Unauthorized - you did not create this business" }),
+        headers,
+        body: JSON.stringify({ error: "Invali Admin permission" }),
       };
     }
 
@@ -51,10 +57,10 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
       new UpdateCommand({
         TableName: "Business",
         Key: { BusinessId },
-        UpdateExpression: "set businessName = :name, description = :description",
+        UpdateExpression: "set businessName = :title, summary  = :summary",
         ExpressionAttributeValues: {
-          ":name": body.name,
-          ":description": body.description,
+          ":title": body.title,
+          ":summery": body.summery,
         },
         ReturnValues: "ALL_NEW",
       })
@@ -62,12 +68,14 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify(result.Attributes),
     };
 
   } catch (error) {
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message }),
     };
   }

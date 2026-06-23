@@ -3,32 +3,35 @@ import { PutCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-
+const headers = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+}
 export const handler = async (event) => {
-  const userId = event.requestContext?.authorizer?.claims?.sub;
+  const admin = event.requestContext?.authorizer?.claims?.sub;
 
-  // USER ID IS REQUIRED
-  if (!userId) {
+  // ADMIN IS REQUIRED
+  if (!admin) {
     return {
       statusCode: 401,
-
-      body: JSON.stringify({ error: "Invalid User" }),
+      headers,
+      body: JSON.stringify({ error: "Invalid admin" }),
     };
   }
 
   try {
     const body = JSON.parse(event.body);
-    const {  comment } = body;
-    const BusinessId = event.pathParameters?.id;
-    const userId = event.requestContext?.authorizer?.claims?.sub;
-    const userEmail = event.requestContext?.authorizer?.claims?.email;
-    
+    const { message } = body;
+    const BusinessId = event.pathParameters?.BusinessId;
+    const adminEmail = event.requestContext?.authorizer?.claims?.email;
+
     const review = {
-      reviewId: Date.now().toString(),
-      BusinessId,  
-      userId,
-      userEmail,  
-      comment,
+      ReviewId: crypto.randomUUID(),
+      BusinessId,
+      admin,
+      adminEmail,
+      message,
     };
 
     await dynamo.send(
@@ -40,12 +43,14 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify(review),
     };
 
   } catch (error) {
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message }),
     };
   }

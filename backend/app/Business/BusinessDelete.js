@@ -3,21 +3,25 @@ import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from "@aws-sdk/lib-
 
 const client = new DynamoDBClient({});
 const dynamo = DynamoDBDocumentClient.from(client);
-
+const headers = {
+  "Access-Control-Allow-Origin": "http://localhost:5173",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "OPTIONS,GET,POST,PUT,DELETE",
+}
 export const handler = async (event) => {
   try {
+    const admin = event.requestContext?.authorizer?.claims?.sub;
 
-const userId = event.requestContext?.authorizer?.claims?.sub;
-
-    // USER ID IS REQUIRED
-    if (!userId) {
+    // ADMIN IS REQUIRED
+    if (!admin) {
       return {
-        statusCode: 401,
-        body: JSON.stringify({ error: "Invalid User" }),
+        statusCode:
+          headers,
+        body: JSON.stringify({ error: "Invalid Admin" }),
       };
     }
 
-    const BusinessId = event.pathParameters?.id;
+    const BusinessId = event.pathParameters?.BusinessId;
 
     // GETTING EXISTING BUSINESS
     const existing = await dynamo.send(
@@ -31,14 +35,16 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     if (!existing.Item) {
       return {
         statusCode: 404,
+        headers,
         body: JSON.stringify({ error: "No Business Found" }),
       };
     }
 
     // USER ID MUST MATCH
-    if (existing.Item.userId !== userId) {
+    if (existing.Item.admin !== admin) {
       return {
         statusCode: 401,
+        headers,
         body: JSON.stringify({ error: "Permission Denied" }),
       };
     }
@@ -47,18 +53,20 @@ const userId = event.requestContext?.authorizer?.claims?.sub;
     await dynamo.send(
       new DeleteCommand({
         TableName: "Business",
-        Key: { businessId },
+        Key: { BusinessId },
       })
     );
 
     return {
       statusCode: 200,
+      headers,
       body: JSON.stringify({ message: "Deleted successfully" }),
     };
 
   } catch (error) {
     return {
       statusCode: 500,
+      headers,
       body: JSON.stringify({ error: error.message }),
     };
   }

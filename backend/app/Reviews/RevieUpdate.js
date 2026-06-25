@@ -23,6 +23,7 @@ export const handler = async (event) => {
 
   try {
     const ReviewId = event.pathParameters?.ReviewId;
+    const BusinessId = event.pathParameters?.BusinessId;
     const body = JSON.parse(event.body);
     const { message } = body;
 

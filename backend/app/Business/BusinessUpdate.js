@@ -13,7 +13,7 @@ export const handler = async (event) => {
 
     const admin = event.requestContext?.authorizer?.claims?.sub;
 
-    //USER ID MUST REQUIRED
+    //ADMIN MUST REQUIRED
     if (!admin) {
       return {
         statusCode: 401,
@@ -60,7 +60,7 @@ export const handler = async (event) => {
         UpdateExpression: "set businessName = :title, summary  = :summary",
         ExpressionAttributeValues: {
           ":title": body.title,
-          ":summery": body.summery,
+          ":summary": body.summary,
         },
         ReturnValues: "ALL_NEW",
       })

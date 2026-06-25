@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search, LogIn, BookOpen, LogOut, User } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { getCurrentUser, signOut } from "aws-amplify/auth";
 import Button from "./Button";
 
@@ -38,9 +38,11 @@ export default function Navbar({ searchTerm, onSearchChange }) {
     <header className="w-full bg-white">
       <div className="h-1.5 bg-black" />
       <div className="flex items-center gap-6 px-6 py-4 border-b-2 border-[#B5481F]">
-        <h1 className="text-2xl font-bold text-[#B5481F] whitespace-nowrap">
+        <Link 
+      to={'/'}
+        className="text-2xl font-bold text-[#B5481F] whitespace-nowrap">
           BioBridge
-        </h1>
+        </Link>
 
         <div className="relative flex-1 max-w-xl">
           <Search
